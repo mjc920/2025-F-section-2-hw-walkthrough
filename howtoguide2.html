@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>How to Survive a Dinosaur Attack — Kid Friendly</title>
+  <!-- Google Fonts: movie-style title + rounded readable body -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --jungle-dark:#0b3b2e; /* deep green */
+      --jungle-mid:#116d4b;  /* mid green */
+      --jungle-light:#7acc8a; /* light green */
+      --accent:#f2d46f; /* warm yellow */
+      --card-bg: rgba(255,255,255,0.06);
+      --glass: rgba(255,255,255,0.06);
+    }
+
+    html,body{height:100%;}
+    body{
+      margin:0;
+      font-family: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+      background: radial-gradient(circle at 10% 20%, rgba(123,199,132,0.08), transparent 10%),
+                  linear-gradient(180deg, #031a14 0%, #082a1f 40%, #0b3b2e 100%);
+      color: #eef9f1;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding:3rem 1rem;
+      box-sizing:border-box;
+    }
+
+    .wrap{
+      max-width:900px;
+      margin:0 auto;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:16px;
+      padding:2.5rem;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.03);
+      backdrop-filter: blur(4px);
+    }
+
+    header{
+      text-align:center;
+      margin-bottom:1.75rem;
+    }
+
+    h1{
+      margin:0;
+      font-family: 'Orbitron', sans-serif;
+      letter-spacing:2px;
+      font-size:3.2rem;
+      line-height:1;
+      color: var(--accent);
+      text-shadow: 0 6px 14px rgba(0,0,0,0.7), 0 1px 0 rgba(255,255,255,0.03) inset;
+    }
+
+    .subtitle{
+      margin-top:0.4rem;
+      font-weight:600;
+      color: #dfffe6;
+      opacity:0.95;
+      font-size:1rem;
+    }
+
+    .card{
+      background: var(--card-bg);
+      border-radius:12px;
+      padding:1.25rem 1.5rem;
+      margin-bottom:1rem;
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+
+    p.lead{
+      margin:0 0 0.75rem 0;
+      color: #dfffe6;
+      opacity:0.95;
+    }
+
+    ul.steps{
+      margin:0;
+      padding-left:1.1rem;
+      list-style:none;
+    }
+
+    /* fun bullet markers that feel leafy */
+    ul.steps li{
+      position:relative;
+      padding:0.9rem 0 0.9rem 2.4rem;
+      border-bottom: 1px dashed rgba(255,255,255,0.03);
+      font-weight:600;
+    }
+
+    ul.steps li:last-child{border-bottom:0}
+
+    ul.steps li::before{
+      content:'';
+      position:absolute;
+      left:0.5rem;
+      top:50%;
+      transform:translateY(-50%);
+      width:1.2rem;
+      height:1.2rem;
+      border-radius:0.25rem;
+      background: linear-gradient(180deg,var(--jungle-mid),var(--jungle-dark));
+      box-shadow: 0 4px 8px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.02) inset;
+      border: 2px solid rgba(0,0,0,0.25);
+    }
+
+    .hint{
+      font-weight:400;
+      font-size:0.95rem;
+      color:#e8f9ea;
+      opacity:0.9;
+      margin-top:0.5rem;
+    }
+
+    a.wikipedia-link{
+      color: var(--accent);
+      font-weight:700;
+      text-decoration: none;
+      border-bottom: 2px dashed rgba(242,212,111,0.35);
+    }
+
+    footer{
+      margin-top:1.25rem;
+      text-align:center;
+      color:#cfeee0;
+      opacity:0.9;
+      font-size:0.9rem;
+    }
+
+    /* small responsive tweaks */
+    @media (max-width:520px){
+      h1{font-size:2.2rem}
+      .wrap{padding:1.25rem}
+      ul.steps li{padding:0.7rem 0 0.7rem 2.2rem}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap" role="main">
+    <div class="steps"><a href="http://index.html" target="_blank" rel="noopener noreferrer"></a></div>
+    <header>
+      <h1>How to Survive a Dinosaur Attack</h1>
+      <div class="subtitle">A kid-friendly, jungle-safe guide (playful & imaginative)</div>
+    </header>
+
+    <section class="card" aria-labelledby="steps-heading">
+      <h2 id="steps-heading" style="margin-top:0;color:var(--jungle-light);">Quick steps</h2>
+      <p class="lead">If a dinosaur were nearby (pretend-play or story time!), follow these calm, safe steps. These are for fun and imagination — dinosaurs are not real visitors today.</p>
+
+      <ul class="steps">
+        <li><strong>Stay calm and find an adult.</strong>
+          <div class="hint">Shouting or running fast can make things scarier. Look for a grown-up and tell them where you are.</div>
+        </li>
+
+        <li><strong>Move to a safe hiding spot quietly.</strong>
+          <div class="hint">Good hiding spots are behind big rocks, inside a sturdy building, or behind tall trees — somewhere the dinosaur can't see you.</div>
+        </li>
+
+        <li><strong>Keep very still and be quiet.</strong>
+          <div class="hint">Dinosaurs (in stories) notice movement and noise first. Pretend you're a statue or a sleeping log.</div>
+        </li>
+
+        <li><strong>Do not try to feed or touch it.</strong>
+          <div class="hint">Even if it looks friendly, keep a safe distance. Offer a smile in your imagination instead!</div>
+        </li>
+
+        <li><strong>Use distraction only if an adult says it’s okay.</strong>
+          <div class="hint">Sometimes throwing a soft toy far away (while hiding) is a pretend way to distract — but only with permission.</div>
+        </li>
+
+        <li><strong>If you must move, go slowly and quietly to an exit.</strong>
+          <div class="hint">Walk very slowly, bend low, and keep behind trees or big cover while an adult leads the way.</div>
+        </li>
+
+        <li><strong>Follow instructions from adults or helpers.</strong>
+          <div class="hint">Listen to adults — they know how to help and keep everyone safe.</div>
+        </li>
+
+        <li><strong>After it's safe, talk about what happened.</strong>
+          <div class="hint">Share your feelings, ask questions, and maybe draw a picture of the adventure.</div>
+        </li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h3 style="margin-top:0;color:var(--jungle-light);">Want to learn more?</h3>
+      <p class="hint">Here’s a set of kid-friendly articles about dinosaurs on Wikipedia that explain what real dinosaurs were like (long ago):
+        <ul class="hint" style="list-style:none; padding-left:0; margin:0;">
+          <li><a class="wikipedia-link" href="https://en.wikipedia.org/wiki/Dinosaur" target="_blank" rel="noopener">Wikipedia — Dinosaur</a></li>
+          <li><a class="wikipedia-link" href="https://en.wikipedia.org/wiki/Tyrannosaurus" target="_blank" rel="noopener">Wikipedia — Tyrannosaurus</a></li>
+          <li><a class="wikipedia-link" href="https://en.wikipedia.org/wiki/Velociraptor" target="_blank" rel="noopener">Wikipedia — Velociraptor</a></li>
+          <li><a class="wikipedia-link" href="https://en.wikipedia.org/wiki/Jurassic_Park" target="_blank" rel="noopener">Wikipedia — Jurassic Park (film series)</a></li>
+        </ul>
+      </p>
+    </section>
+
+    <footer>
+      <div>Made for storytime and imagination. Always follow real safety rules from grown-ups in real life.</div>
+    </footer>
+  </div>
+</body>
+</html>

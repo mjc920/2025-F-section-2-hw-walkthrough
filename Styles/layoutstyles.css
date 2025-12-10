@@ -1,0 +1,51 @@
+body{ background-color: gray;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+.common{
+    background-color: gray;
+    border: 2px solid white;
+    position: absolute;
+}
+.header{ 
+    top: 5px;
+    left: 5px;
+    right: 5px;
+    height: 100px;
+    z-index: 2;
+}
+
+.leftmenu{
+    top: 300px;
+    left: 5px;
+    width: 100px;
+    bottom: 300px;
+    z-index: 1;
+    padding-top: 0px;
+}
+
+.mainbody{
+    top: 114px;
+    left: 114px;
+    right: 114px;
+    bottom: 39px;
+
+}
+
+.rightmenu{
+    top: 114px;
+    right: 5px;
+    width: 100px;
+    bottom: 39px;
+}
+
+.footer{
+    bottom: 5px;
+    left: 5px;
+    right: 5px;
+    height: 25px;
+    font-size: 8px;
+    color: black;
+    text-align: center;
+    padding-top: 15px;
+}

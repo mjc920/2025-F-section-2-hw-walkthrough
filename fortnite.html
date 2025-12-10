@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Mini Battle Royale — Fixed Prototype</title>
+<style>
+  :root{
+    --bg1:#071226; --bg2:#0f2a44; --panel: rgba(255,255,255,0.04);
+    --accent:#ffd166; --danger:#ff6b6b; --heal:#6ee7b7;
+  }
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;}
+  body{
+    background: linear-gradient(180deg,var(--bg1),var(--bg2));
+    color:#e6f3ff;
+    display:flex;align-items:center;justify-content:center;padding:18px;
+  }
+  .wrap{width:min(980px,96vw); display:grid; grid-template-columns: 1fr 300px; gap:16px;}
+  .game-card{
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,0.03);
+    box-shadow: 0 12px 36px rgba(0,0,0,0.45);
+  }
+  canvas{display:block; width:100%; border-radius:8px; background:#0a243a; box-shadow: inset 0 0 40px rgba(0,0,0,0.15);}
+  .panel{background:var(--panel); border-radius:10px;padding:12px; color:#e9f9ff;}
+  h1{font-size:18px;margin:0 0 8px 0;color:var(--accent);}
+  .stat{display:flex;justify-content:space-between;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px;margin-bottom:8px;font-weight:600;}
+  .controls{font-size:13px;color:#dff7ff;opacity:0.95}
+  .btn{padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.03);cursor:pointer;margin-right:6px;}
+  .footer{margin-top:8px;font-size:12px;color:#cdefff;}
+  @media (max-width:920px){ .wrap{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="game-card">
+      <canvas id="game" width="800" height="600" tabindex="0"></canvas>
+      <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
+        <button class="btn" id="btnStart">Start New Match</button>
+        <button class="btn" id="btnPause">Pause</button>
+        <div style="flex:1"></div>
+        <div class="controls">WASD to move • Mouse to aim • Click to shoot • R to respawn (debug)</div>
+      </div>
+    </div>
+
+    <aside class="panel">
+      <h1>Mini Battle Royale</h1>
+      <div class="stat"><span>Players Alive</span><span id="aliveCount">0</span></div>
+      <div class="stat"><span>Time</span><span id="timeLabel">00:00</span></div>
+      <div class="stat"><span>Your Health</span><span id="healthLabel">100</span></div>
+      <div class="stat"><span>Ammo</span><span id="ammoLabel">30</span></div>
+
+      <div style="margin-top:10px;">
+        <div style="font-weight:700;margin-bottom:6px;">Match Settings</div>
+        <label>Map size:
+          <select id="mapSize">
+            <option value="800x600" selected>800×600</option>
+            <option value="1000x700">1000×700</option>
+          </select>
+        </label>
+        <div style="margin-top:8px;">
+          <label>Bots: <input type="number" id="botCount" value="8" min="0" max="30" /></label>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <div style="font-weight:700;margin-bottom:6px;">Status</div>
+        <div id="statusText">Press Start to begin a match.</div>
+      </div>
+
+      <div class="footer">Prototype: single-file. No assets. Expandable.</div>
+    </aside>
+  </div>
+
+<script>
+/* Fixed and simplified mini battle royale prototype.
+   - Single-file. No external assets.
+   - WASD movement, mouse aim, left-click shoot.
+   - Bots, bullets, crates, shrinking safe zone.
+*/
+
+// DOM
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const UI = {
+  aliveCount: document.getElementById('aliveCount'),
+  timeLabel: document.getElementById('timeLabel'),
+  healthLabel: document.getElementById('healthLabel'),
+  ammoLabel: document.getElementById('ammoLabel'),
+  btnStart: document.getElementById('btnStart'),
+  btnPause: document.getElementById('btnPause'),
+  statusText: document.getElementById('statusText'),
+  botCount: document.getElementById('botCount'),
+  mapSize: document.getElementById('mapSize'),
+};
+
+// Config & State
+let WIDTH = canvas.width, HEIGHT = canvas.height;
+let entities = [];     // includes player and bots
+let bullets = [];
+let crates = [];
+let safeZone = { x: WIDTH/2, y: HEIGHT/2, r: Math.min(WIDTH,HEIGHT)/2 - 20, shrinkStart: 20, shrinkDuration: 80 };
+let player = null;
+let running = false;
+let gameStartTime = 0;
+let mouse = { x: WIDTH/2, y: HEIGHT/2, down: false };
+let keys = {};
+let tickCounter = 0;
+
+// Utilities
+const rand = (a,b)=> a + Math.random()*(b-a);
+const randInt = (a,b)=> Math.floor(rand(a,b+1));
+const clamp = (v,a,b)=> Math.max(a, Math.min(b,v));
+const dist2 = (a,b)=> (a.x-b.x)*(a.x-b.x) + (a.y-b.y)*(a.y-b.y);
+
+// Entity factory
+function createPlayer(isBot=false){
+  return {
+    id: Math.random().toString(36).slice(2,9),
+    x: randInt(60, WIDTH-60),
+    y: randInt(60, HEIGHT-60),
+    vx:0, vy:0,
+    angle:0,
+    speed: isBot ? rand(0.7,1.4) : 2.2,
+    hp:100, maxHp:100,
+    ammo: isBot ? 999 : 30,
+    isBot: !!isBot,
+    alive: true,
+    name: isBot ? 'Bot-'+randInt(100,999) : 'You',
+    lastShot: 0,
+    color: isBot ? (Math.random()>0.5 ? '#ff8fa3' : '#8ad4ff') : '#ffd166'
+  };
+}
+
+// Initialize / reset match
+function setMapSizeFromSelect(){
+  const split = UI.mapSize.value.split('x').map(n=>parseInt(n,10));
+  WIDTH = canvas.width = split[0];
+  HEIGHT = canvas.height = split[1];
+  safeZone.x = WIDTH/2; safeZone.y = HEIGHT/2;
+  safeZone.r = Math.min(WIDTH,HEIGHT)/2 - 20;
+}
+UI.mapSize.addEventListener('change', ()=> { setMapSizeFromSelect(); resetMatch(false); });
+
+UI.btnStart.addEventListener('click', ()=> resetMatch(true));
+UI.btnPause.addEventListener('click', ()=> { running = !running; UI.btnPause.textContent = running ? 'Pause' : 'Resume'; });
+
+function resetMatch(autoStart=false){
+  setMapSizeFromSelect();
+  entities = [];
+  bullets = [];
+  crates = [];
+  safeZone = { x: WIDTH/2, y: HEIGHT/2, r: Math.min(WIDTH,HEIGHT)/2 - 20, shrinkStart: 20, shrinkDuration: 80 };
+  tickCounter = 0;
+
+  // create player
+  player = createPlayer(false);
+  entities.push(player);
+
+  // create bots
+  const botNum = clamp(parseInt(UI.botCount.value || '8',10), 0, 40);
+  for (let i=0;i<botNum;i++){
+    entities.push(createPlayer(true));
+  }
+  // crates
+  for (let i=0;i<Math.max(3, Math.floor(WIDTH*HEIGHT/70000)); i++) spawnCrate();
+
+  gameStartTime = performance.now()/1000;
+  running = !!autoStart;
+  UI.statusText.textContent = autoStart ? 'Match started!' : 'Ready.';
+  UI.btnPause.textContent = running ? 'Pause' : 'Resume';
+  updateUI();
+}
+
+// Spawn crate
+function spawnCrate(){
+  crates.push({
+    id: Math.random().toString(36).slice(2,9),
+    x: randInt(40, WIDTH-40),
+    y: randInt(40, HEIGHT-40),
+    type: Math.random() < 0.6 ? 'ammo' : 'heal',
+    taken: false
+  });
+}
+
+// Input
+canvas.addEventListener('mousemove', e=>{
+  const rect = canvas.getBoundingClientRect();
+  mouse.x = (e.clientX - rect.left) * (canvas.width / rect.width);
+  mouse.y = (e.clientY - rect.top) * (canvas.height / rect.height);
+});
+canvas.addEventListener('mousedown', e => { mouse.down = true; if (!running) { running = true; UI.statusText.textContent = 'Match started!'; } });
+canvas.addEventListener('mouseup', e => { mouse.down = false; });
+window.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; if (e.key.toLowerCase()==='r') respawnPlayer(); if (e.key===' ') { running = !running; UI.btnPause.textContent = running ? 'Pause' : 'Resume'; } });
+window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+// Fire bullet
+function fireBullet(shooter, tx, ty){
+  if (!shooter.alive) return;
+  if (!shooter.isBot && shooter.ammo <= 0) return;
+  const angle = Math.atan2(ty - shooter.y, tx - shooter.x);
+  bullets.push({
+    id: Math.random().toString(36).slice(2,9),
+    x: shooter.x, y: shooter.y,
+    vx: Math.cos(angle)*8, vy: Math.sin(angle)*8,
+    owner: shooter.id,
+    life: 60,
+    damage: shooter.isBot ? 10 : 16
+  });
+  shooter.lastShot = performance.now();
+  if (!shooter.isBot) shooter.ammo = Math.max(0, shooter.ammo - 1);
+}
+
+// Simple bot AI
+function botThink(bot){
+  if (!bot.alive) return;
+  // find nearest alive non-self
+  let target = null;
+  let best = Infinity;
+  for (const e of entities){
+    if (e.id === bot.id || !e.alive) continue;
+    const d = dist2(bot, e);
+    if (d < best){ best = d; target = e; }
+  }
+  if (!target) return;
+  // move toward target with some jitter
+  const ang = Math.atan2(target.y - bot.y, target.x - bot.x) + (Math.random()-0.5)*0.3;
+  bot.vx = Math.cos(ang) * bot.speed;
+  bot.vy = Math.sin(ang) * bot.speed;
+  bot.angle = Math.atan2(target.y - bot.y, target.x - bot.x);
+  // shoot sometimes if in range
+  if (best < (260*260) && Math.random() < 0.02 && (performance.now() - bot.lastShot) > 250){
+    fireBullet(bot, target.x + rand(-6,6), target.y + rand(-6,6));
+  }
+}
+
+// Update physics + game state
+function updatePhysics(){
+  // controls for human player
+  if (player && player.alive){
+    let mvx = 0, mvy = 0;
+    if (keys['w'] || keys['arrowup']) mvy -= 1;
+    if (keys['s'] || keys['arrowdown']) mvy += 1;
+    if (keys['a'] || keys['arrowleft']) mvx -= 1;
+    if (keys['d'] || keys['arrowright']) mvx += 1;
+    const mag = Math.hypot(mvx, mvy) || 1;
+    player.vx = (mvx/mag) * player.speed;
+    player.vy = (mvy/mag) * player.speed;
+    player.angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+    if (mouse.down && (performance.now() - player.lastShot) > 120) fireBullet(player, mouse.x, mouse.y);
+  }
+
+  // bots
+  for (const e of entities) if (e.isBot) botThink(e);
+
+  // apply movement & clamp
+  for (const e of entities){
+    if (!e.alive) continue;
+    e.x += e.vx; e.y += e.vy;
+    e.x = clamp(e.x, 8, WIDTH-8);
+    e.y = clamp(e.y, 8, HEIGHT-8);
+  }
+
+  // bullets movement and collisions
+  for (let i = bullets.length-1; i>=0; i--){
+    const b = bullets[i];
+    b.x += b.vx; b.y += b.vy; b.life--;
+    // check against entities
+    let removed = false;
+    for (const e of entities){
+      if (!e.alive) continue;
+      if (e.id === b.owner) continue;
+      const d2 = (e.x - b.x)*(e.x - b.x) + (e.y - b.y)*(e.y - b.y);
+      if (d2 < 12*12){
+        e.hp -= b.damage;
+        bullets.splice(i,1);
+        removed = true;
+        if (e.hp <= 0){
+          e.alive = false;
+          e.hp = 0;
+          UI.statusText.textContent = `${e.name} was eliminated`;
+        }
+        break;
+      }
+    }
+    if (removed) continue;
+    if (b.life <= 0 || b.x < -20 || b.x > WIDTH+20 || b.y < -20 || b.y > HEIGHT+20) bullets.splice(i,1);
+  }
+
+  // crates pickup
+  for (let i = crates.length-1; i>=0; i--){
+    const c = crates[i];
+    for (const e of entities){
+      if (!e.alive) continue;
+      if ((e.x - c.x)**2 + (e.y - c.y)**2 < 18*18){
+        if (c.type === 'ammo') e.ammo += 15;
+        else if (c.type === 'heal') e.hp = Math.min(e.maxHp, e.hp + 30);
+        crates.splice(i,1);
+        setTimeout(spawnCrate, 3000 + randInt(0,2000));
+        break;
+      }
+    }
+  }
+
+  // safe zone shrink logic based on elapsed time
+  const t = Math.max(0, performance.now()/1000 - gameStartTime);
+  if (t > safeZone.shrinkStart){
+    const elapsed = t - safeZone.shrinkStart;
+    const prog = clamp(elapsed / safeZone.shrinkDuration, 0, 1);
+    const startR = Math.min(WIDTH,HEIGHT)/2 - 20;
+    const endR = 40 + Math.min(WIDTH,HEIGHT) * 0.03;
+    safeZone.r = startR * (1-prog) + endR * prog;
+  }
+
+  // damage entities outside safe zone
+  for (const e of entities){
+    if (!e.alive) continue;
+    const d = Math.hypot(e.x - safeZone.x, e.y - safeZone.y);
+    if (d > safeZone.r) {
+      e.hp -= 0.2; // slow damage
+      if (e.hp <= 0) { e.hp = 0; e.alive = false; }
+    }
+  }
+}
+
+// Draw everything
+function draw(){
+  ctx.clearRect(0,0,WIDTH,HEIGHT);
+
+  // background
+  ctx.fillStyle = '#071226';
+  ctx.fillRect(0,0,WIDTH,HEIGHT);
+
+  // subtle grid
+  ctx.save();
+  ctx.globalAlpha = 0.06;
+  ctx.fillStyle = '#ffffff';
+  for (let x=0;x<WIDTH;x+=40) ctx.fillRect(x,0,1,HEIGHT);
+  for (let y=0;y<HEIGHT;y+=40) ctx.fillRect(0,y,WIDTH,1);
+  ctx.restore();
+
+  // safe zone
+  ctx.save();
+  ctx.beginPath();
+  ctx.fillStyle = 'rgba(14,76,115,0.06)';
+  ctx.arc(safeZone.x, safeZone.y, safeZone.r, 0, Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(160,220,255,0.12)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(safeZone.x, safeZone.y, safeZone.r, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.restore();
+
+  // crates
+  for (const c of crates){
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.fillStyle = c.type === 'ammo' ? '#ffd166' : '#6ee7b7';
+    ctx.fillRect(-8,-8,16,16);
+    ctx.strokeStyle = '#062228';
+    ctx.strokeRect(-8,-8,16,16);
+    ctx.restore();
+  }
+
+  // bullets
+  for (const b of bullets){
+    ctx.beginPath();
+    ctx.fillStyle = '#fff3';
+    ctx.arc(b.x, b.y, 3, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // entities
+  for (const e of entities){
+    ctx.save();
+    if (!e.alive){
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = '#555';
+      ctx.beginPath(); ctx.arc(e.x, e.y, 12, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+      continue;
+    }
+    // body
+    ctx.fillStyle = e.color;
+    ctx.beginPath(); ctx.arc(e.x, e.y, 12, 0, Math.PI*2); ctx.fill();
+    // name
+    ctx.fillStyle = '#eaf6ff';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(e.name, e.x, e.y - 18);
+    // health bar
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(e.x-16, e.y+14, 32, 6);
+    ctx.fillStyle = '#4ade80';
+    ctx.fillRect(e.x-16, e.y+14, 32 * (e.hp / e.maxHp), 6);
+    ctx.restore();
+  }
+
+  // crosshair for player
+  if (player){
+    ctx.save();
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.moveTo(mouse.x-8, mouse.y); ctx.lineTo(mouse.x+8, mouse.y);
+    ctx.moveTo(mouse.x, mouse.y-8); ctx.lineTo(mouse.x, mouse.y+8);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// Simple respawn (debug)
+function respawnPlayer(){
+  if (!player) return;
+  player.hp = player.maxHp;
+  player.alive = true;
+  player.x = randInt(60, WIDTH-60);
+  player.y = randInt(60, HEIGHT-60);
+  player.ammo = 30;
+  UI.statusText.textContent = 'Respawned';
+}
+
+// Update UI
+function updateUI(){
+  UI.aliveCount.textContent = String(entities.filter(e=>e.alive).length);
+  const t = Math.max(0, Math.floor((performance.now()/1000) - gameStartTime));
+  UI.timeLabel.textContent = `${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`;
+  UI.healthLabel.textContent = player ? String(Math.max(0, Math.floor(player.hp))) : '0';
+  UI.ammoLabel.textContent = player ? String(player.ammo) : '0';
+}
+
+// Game loop
+function loop(){
+  if (running){
+    updatePhysics();
+    // check match end
+    const alive = entities.filter(e=>e.alive);
+    if (alive.length <= 1){
+      running = false;
+      if (alive.length === 1) UI.statusText.textContent = `${alive[0].name} wins!`;
+      else UI.statusText.textContent = 'Match ended.';
+    }
+  }
+  draw();
+  updateUI();
+  requestAnimationFrame(loop);
+}
+
+// Kick things off with default map size and initial state
+setMapSizeFromSelect();
+resetMatch(false);
+loop();
+
+</script>
+</body>
+</html>
